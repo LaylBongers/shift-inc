@@ -2,8 +2,8 @@ Features:                                                                       
 - Show stomach wall in grid                                                     3:30 - 4:30     3:31 - 4:30
 - Have green food blobs floating down in stomach wall                           4:30 - 5:30     4:30 - 5:30
                                                                                 SLEEP
-- Move around camera with WASD                                                  10:00 - 10:30   10:40 -
-- Start out with a core                                                         10:30 - 11:30
+- Move around camera with WASD                                                  10:00 - 10:30   10:40 - 11:14
+- Start out with a core                                                         10:30 - 11:30   11:14 - 11:34
                                                                                 BREAK
 - Start out with a few robots                                                   11:30 - 12:30
 - Make robots carry food blobs to buildings to build them (find a path)         12:30 - 15:00

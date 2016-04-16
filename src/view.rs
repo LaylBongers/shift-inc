@@ -12,6 +12,8 @@ impl View {
         let tiles = vec!(
             frontend.load_texture("./assets/background.png"),
             frontend.load_texture("./assets/foreground.png"),
+            frontend.load_texture("./assets/wall.png"),
+            frontend.load_texture("./assets/core.png"),
         );
 
         View {
