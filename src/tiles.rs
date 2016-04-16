@@ -1,20 +1,47 @@
+use cgmath::Vector2;
 use tiled::Map;
+use robots::{WorkQueue, WorkEntry};
 
 #[derive(Debug)]
 pub struct Tile {
-    pub id: u32
+    id: u32,
+    construction: Option<u32>,
 }
 
 impl Tile {
     fn from_raw_id(raw_id: u32) -> Self {
-        let id = if raw_id == 0 {
-            1 // Default tile, solid flesh
-        } else {
-            raw_id - 1 // Actual tile
+        // Get the actual ID
+        let mut id = {
+            if raw_id == 0 {
+                1 // If there's no tile here, use the default tile, solid flesh
+            } else {
+                raw_id - 1 // Actual tile
+            }
         };
+
+        // See if we need to flip this tile to under construction
+        // We do this for the initial structues and let the robots build it
+        let mut construction = None;
+        if id == 2 || id == 3 {
+            construction = Some(id);
+            id = 0; // Empty
+        }
 
         Tile {
             id: id,
+            construction: construction,
+        }
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn is_under_construction(&self) -> bool {
+        if let Some(_) = self.construction {
+            true
+        } else {
+            false
         }
     }
 }
@@ -26,7 +53,7 @@ pub struct Tiles {
 }
 
 impl Tiles {
-    pub fn load(map: &Map) -> Self {
+    pub fn load(map: &Map, work: &mut WorkQueue) -> Self {
         // Process the tiles
         let tiles_layer = map.layers.iter().find(|v| v.name == "Tiles").unwrap();
         let mut tiles = Vec::new();
@@ -36,11 +63,20 @@ impl Tiles {
             }
         }
 
-        Tiles {
+        let tiles = Tiles {
             width: map.width,
             height: map.height,
             tiles: tiles,
-        }
+        };
+
+        // Spawn work items for each under construction tile
+        tiles.for_each(|x, y, tile| {
+            if tile.is_under_construction() {
+                work.publish(WorkEntry::new(Vector2::new(x, y)));
+            }
+        });
+
+        tiles
     }
 
     pub fn width(&self) -> u32 {

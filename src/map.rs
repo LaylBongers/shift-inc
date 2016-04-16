@@ -2,7 +2,7 @@ use cgmath::Vector2;
 use tiled::{Map, Object};
 use rand::{StdRng, Rng};
 use items::{Item, Items};
-use robots::{Robots, Robot};
+use robots::{Robots, Robot, WorkQueue};
 use tiles::Tiles;
 
 struct FoodSpawner {
@@ -38,16 +38,20 @@ pub struct GameMap {
     robots: Robots,
 
     food_spawn_accum: f32,
+    work_queue: WorkQueue,
 }
 
 impl GameMap {
     pub fn load(map: Map, rng: &mut StdRng) -> Self {
+        // Initialize the work queue
+        let mut work = WorkQueue::new();
+
         // Should have 1 layer and 1 object group
         assert_eq!(map.layers.len(), 1);
         assert_eq!(map.object_groups.len(), 1);
 
         // Load in the tiles
-        let tiles = Tiles::load(&map);
+        let tiles = Tiles::load(&map, &mut work);
 
         // Process the food spawners
         let food_spawners_layer = map.object_groups.iter().find(|v| v.name == "Food Spawners").unwrap();
@@ -62,10 +66,10 @@ impl GameMap {
             }
         }
 
-        // Find the core and walls in the map and spawn some robots for it
+        // Spawn one robot for each tile that's under construction
         let mut robots = Robots::new();
         tiles.for_each(|x, y, tile| {
-            if tile.id != 2 && tile.id != 3 { return; }
+            if !tile.is_under_construction() { return; }
 
             robots.add(Robot::new(Vector2::new(x as f32 + 0.5, y as f32 + 0.5)));
         });
@@ -79,6 +83,7 @@ impl GameMap {
             robots: robots,
 
             food_spawn_accum: 0.0,
+            work_queue: work,
         };
 
         // Spawn some food and advance time before the first frame
@@ -113,12 +118,15 @@ impl GameMap {
         // Update all items
         self.items.update(&self.tiles, delta);
 
-        // Spawn a food blob if time has passed and we don't already have 100
+        // Spawn a food blob if enough time has passed
         self.food_spawn_accum += delta;
         while self.food_spawn_accum > 4.0 {
             self.food_spawn_accum -= 4.0;
             self.spawn_food(rng);
         }
+
+        // Update all the robots
+        self.robots.update(&mut self.work_queue);
     }
 
     fn spawn_food(&mut self, rng: &mut StdRng) {

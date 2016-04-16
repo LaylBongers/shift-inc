@@ -5,6 +5,7 @@ pub struct View {
     tiles: Vec<TextureId>,
     food: TextureId,
     robot: TextureId,
+    construction: TextureId,
 }
 
 impl View {
@@ -21,6 +22,7 @@ impl View {
             tiles: tiles,
             food: frontend.load_texture("./assets/food.png"),
             robot: frontend.load_texture("./assets/robot.png"),
+            construction: frontend.load_texture("./assets/construction.png"),
         }
     }
 
@@ -31,11 +33,21 @@ impl View {
         // Render the tiles
         model.map().tiles().for_each(|x, y, tile| {
             let rect = Rectangle {
-                texture: self.tiles[tile.id as usize],
+                texture: self.tiles[tile.id() as usize],
                 position: [128.0 * x as f32 + 64.0, 128.0 * y as f32 + 64.0],
                 size: [128.0, 128.0],
             };
             batch.rectangle(rect);
+
+            // If this tile's under construction, add a graphic for that
+            if tile.is_under_construction() {
+                let rect = Rectangle {
+                    texture: self.construction,
+                    position: [128.0 * x as f32 + 64.0, 128.0 * y as f32 + 64.0],
+                    size: [128.0, 128.0],
+                };
+                batch.rectangle(rect);
+            }
         });
 
         // Render the robots
