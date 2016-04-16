@@ -1,8 +1,11 @@
 extern crate tiled;
 extern crate rand;
+#[macro_use] extern crate enum_primitive;
+extern crate cgmath;
 extern crate tungsten;
 extern crate tungsten_glium2d;
 
+mod map;
 mod model;
 mod view;
 
@@ -10,7 +13,7 @@ use std::fs::File;
 use std::path::Path;
 use tungsten::{Framework, EventDispatcher, UpdateEvent};
 use tungsten_glium2d::{Frontend2D, CloseRequestEvent, KeyboardInputEvent, Key, KeyState};
-use model::GameModel;
+use model::{GameModel, GameKey};
 use view::View;
 
 fn close_request_handler(model: &mut GameModel, _event: &CloseRequestEvent) {
@@ -22,11 +25,23 @@ fn update_handler(model: &mut GameModel, event: &UpdateEvent) {
 }
 
 fn keyboard_handler(model: &mut GameModel, event: &KeyboardInputEvent) {
-    if event.state == KeyState::Pressed {
+    let pressed = event.state == KeyState::Pressed;
+
+    // Check for the escape key
+    if pressed {
         match event.key {
             Key::Escape => model.close(),
             _ => ()
         }
+    }
+
+    // Relay all key changes
+    match event.key {
+        Key::W => model.handle_keychange(GameKey::CameraUp, pressed),
+        Key::A => model.handle_keychange(GameKey::CameraLeft, pressed),
+        Key::S => model.handle_keychange(GameKey::CameraDown, pressed),
+        Key::D => model.handle_keychange(GameKey::CameraRight, pressed),
+        _ => ()
     }
 }
 

@@ -4,9 +4,10 @@ version = "0.1.0"
 authors = ["Layl <LaylConway@users.noreply.github.com>"]
 
 [dependencies]
-#rustc-serialize = "0.3.19"
 tiled = "0.1.5"
 rand = "0.3.14"
+enum_primitive = "0.1.0"
+cgmath = "0.8.0"
 
 [dependencies.tungsten]
 git = "https://github.com/carbidegames/tungsten.git"

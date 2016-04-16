@@ -21,7 +21,7 @@ impl View {
     }
 
     fn render_world(&self, model: &GameModel, info: &mut FrameRenderInfo) {
-        let camera = info.game_camera([1500.0, 5300.0]); // TODO: Move up!!!
+        let camera = info.game_camera((model.camera().position() * 128.0).into());
         let batch = camera.batch();
 
         // Render the tiles
