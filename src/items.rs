@@ -129,15 +129,18 @@ impl Items {
         // Find the first unclaimed non-falling resource
         // TODO: Important! Find the closest one
         for i in 0..self.items.len() {
-            let item_o = &self.items[i];
+            let item_o = &mut self.items[i];
             if item_o.is_none() {
                 continue;
             }
 
-            let item = item_o.as_ref().unwrap();
+            let item = item_o.as_mut().unwrap();
             if item.state != ItemState::Static || item.claimed {
                 continue;
             }
+
+            // Actually claim the item
+            item.claimed = true;
 
             return Some(i as u32);
         }

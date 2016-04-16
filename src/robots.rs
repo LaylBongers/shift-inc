@@ -146,7 +146,6 @@ impl Robot {
 
                     // Set the state to building and tell the robot to move there
                     self.current_state = RobotState::Building(pos);
-                    self.push_state(RobotState::Moving(pos.cast::<f32>() + Vector2::new(0.5, 0.5), 1.0));
 
                     println!("Robot {} switched to Building", self.id.unwrap());
                 } else {
