@@ -1,4 +1,4 @@
-use map::GameTiles;
+use tiles::Tiles;
 
 pub struct Item {
     pub position: [f32; 2],
@@ -60,7 +60,7 @@ impl Items {
         self.items.push(Some(item));
     }
 
-    pub fn update(&mut self, tiles: &GameTiles, delta: f32) {
+    pub fn update(&mut self, tiles: &Tiles, delta: f32) {
         self.for_each_mut(|item| {
             // == Make them fall down ==
 
@@ -72,11 +72,11 @@ impl Items {
             if tiles.get(pos[0] as u32, (pos[1] - 0.1) as u32)
                 .map(|v| v.id)
                 .unwrap_or(0) != 0 {
-                return;
+                // Do nothing
+            } else {
+                // Apply the change
+                item.position = pos;
             }
-
-            // Apply the change
-            item.position = pos;
 
             // == Update their lifetime ==
             item.lifetime -= delta;

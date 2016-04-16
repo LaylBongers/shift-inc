@@ -8,6 +8,8 @@ extern crate tungsten_glium2d;
 mod items;
 mod map;
 mod model;
+mod robots;
+mod tiles;
 mod view;
 
 use std::fs::File;

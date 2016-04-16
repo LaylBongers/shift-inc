@@ -89,13 +89,16 @@ pub struct GameModel {
 
 impl GameModel {
     pub fn new(map: Map) -> Self {
+        let mut rng = StdRng::new().unwrap();
+        let game_map = GameMap::load(map, &mut rng);
+
         GameModel {
             should_close: false,
-            map: GameMap::load(map),
+            map: game_map,
             camera: GameCamera::new(),
 
             input: InputState::new(),
-            rng: StdRng::new().unwrap(),
+            rng: rng,
         }
     }
 
