@@ -1,4 +1,5 @@
 use tiled::{Map, Object};
+use rand::{StdRng, Rng};
 
 #[derive(Debug)]
 pub struct GameTile {
@@ -31,10 +32,22 @@ impl FoodSpawner {
             size: size,
         }
     }
+
+    fn spawn(&self, rng: &mut StdRng) -> GameItem {
+        let x = rng.gen_range(self.position[0], self.position[0] + self.size[0]);
+        let y = rng.gen_range(self.position[1], self.position[1] + self.size[1]);
+        println!("Spawning at {}, {}", x, y);
+
+        GameItem {
+            position: [x, y],
+            lifetime: 20.0
+        }
+    }
 }
 
 pub struct GameItem {
     pub position: [f32; 2],
+    pub lifetime: f32,
 }
 
 pub struct GameTiles {
@@ -86,11 +99,69 @@ impl GameTiles {
     }
 }
 
+struct GameItems {
+    items: Vec<Option<GameItem>>,
+}
+
+impl GameItems {
+    fn new() -> Self {
+        GameItems {
+            items: Vec::new(),
+        }
+    }
+
+    pub fn for_each<F: FnMut(&GameItem)>(&self, mut f: F) {
+        for item in &self.items {
+            if let &Some(ref item) = item {
+                f(item);
+            }
+        }
+    }
+
+    pub fn for_each_mut<F: FnMut(&mut GameItem)>(&mut self, mut f: F) {
+        for item in &mut self.items {
+            if let &mut Some(ref mut item) = item {
+                f(item);
+            }
+        }
+    }
+
+    fn remove<F: Fn(&GameItem) -> bool>(&mut self, f: F) {
+        for item in &mut self.items {
+            let mut kill = false;
+            if let &mut Some(ref mut item) = item {
+                kill = f(item);
+            }
+            if kill {
+                *item = None;
+            }
+        }
+    }
+
+    fn add(&mut self, item: GameItem) {
+        // Find an empty slot
+        for item_o in &mut self.items {
+            if item_o.is_some() {
+                continue;
+            }
+
+            // Found a slot, add it and return
+            *item_o =  Some(item);
+            return;
+        }
+
+        // Couldn't find one, add to end
+        self.items.push(Some(item));
+    }
+}
+
 pub struct GameMap {
     tiles: GameTiles,
     food_spawners: Vec<FoodSpawner>,
 
-    items: Vec<GameItem>,
+    items: GameItems,
+
+    food_spawn_accum: f32,
 }
 
 impl GameMap {
@@ -107,19 +178,21 @@ impl GameMap {
         let mut food_spawners = Vec::new();
         for obj in &food_spawners_layer.objects {
             if let &Object::Rect { x, y, width, height, visible: _ } = obj {
-                food_spawners.push(FoodSpawner::new([x, y], [width, height]));
+                let actual_height = height / 128.0;
+                food_spawners.push(FoodSpawner::new(
+                    [x / 128.0, tiles.height() as f32 - (y / 128.0) - actual_height],
+                    [width / 128.0, actual_height]
+                ));
             }
         }
-
-        // TODO: Remove me, testing
-        let food = GameItem {
-            position: [1500.0 / 128.0, 5300.0 / 128.0]
-        };
 
         GameMap {
             tiles: tiles,
             food_spawners: food_spawners,
-            items: vec!(food),
+
+            items: GameItems::new(),
+
+            food_spawn_accum: 0.0,
         }
     }
 
@@ -127,26 +200,47 @@ impl GameMap {
         &self.tiles
     }
 
-    pub fn items(&self) -> &Vec<GameItem> {
+    pub fn items(&self) -> &GameItems {
         &self.items
     }
 
-    pub fn update(&mut self, delta: f32) {
-        // Make items fall down
-        for item in &mut self.items {
+    pub fn update(&mut self, delta: f32, rng: &mut StdRng) {
+        // Update all items
+        let tiles = &mut self.tiles;
+        self.items.for_each_mut(|item| {
+            // == Make them fall down ==
+
             // Get the new position for the item
             let mut pos = item.position;
             pos[1] -= 0.5 * delta;
 
             // Make sure the new position doesn't collide with any tiles
-            if self.tiles.get(pos[0] as u32, (pos[1] - 0.1) as u32)
+            if tiles.get(pos[0] as u32, (pos[1] - 0.1) as u32)
                 .map(|v| v.id)
                 .unwrap_or(0) != 0 {
-                continue;
+                return;
             }
 
             // Apply the change
             item.position = pos;
+
+            // == Update their lifetime ==
+            item.lifetime -= delta;
+        });
+
+        // Remove all items that have a lifetime of or less than zero
+        self.items.remove(|item| item.lifetime <= 0.0);
+
+        // Spawn a food blob if time has passed and we don't already have 100
+        self.food_spawn_accum += delta;
+        while self.food_spawn_accum > 4.0 {
+            self.food_spawn_accum -= 4.0;
+
+            // Get the area to spawn in
+            assert_eq!(self.food_spawners.len(), 1);
+            let spawner = &self.food_spawners[0];
+            let item = spawner.spawn(rng);
+            self.items.add(item);
         }
     }
 }
@@ -154,6 +248,7 @@ impl GameMap {
 pub struct GameModel {
     should_close: bool,
     map: GameMap,
+    rng: StdRng,
 }
 
 impl GameModel {
@@ -161,12 +256,13 @@ impl GameModel {
         GameModel {
             should_close: false,
             map: GameMap::load(map),
+            rng: StdRng::new().unwrap(),
         }
     }
 
     pub fn update(&mut self, delta: f32) {
         // Update the map data
-        self.map.update(delta);
+        self.map.update(delta, &mut self.rng);
     }
 
     pub fn close(&mut self) {

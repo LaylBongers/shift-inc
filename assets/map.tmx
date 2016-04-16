@@ -63,6 +63,6 @@
 </data>
  </layer>
  <objectgroup name="Food Spawners">
-  <object id="1" type="FoodSpawn" x="1000" y="0" width="1124" height="64"/>
+  <object id="1" type="FoodSpawn" x="400" y="0" width="2788" height="64"/>
  </objectgroup>
 </map>

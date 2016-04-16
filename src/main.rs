@@ -1,4 +1,5 @@
 extern crate tiled;
+extern crate rand;
 extern crate tungsten;
 extern crate tungsten_glium2d;
 

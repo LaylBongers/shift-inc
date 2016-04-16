@@ -39,14 +39,14 @@ impl View {
         }
 
         // Render the items
-        for item in model.map().items() {
+        model.map().items().for_each(|item| {
             let rect = Rectangle {
                 texture: self.food,
                 position: [item.position[0] * 128.0, item.position[1] * 128.0],
                 size: [32.0, 32.0],
             };
             batch.rectangle(rect);
-        }
+        });
     }
 
     fn render_ui(&self, _model: &GameModel, info: &mut FrameRenderInfo) {

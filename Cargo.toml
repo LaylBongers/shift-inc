@@ -6,6 +6,7 @@ authors = ["Layl <LaylConway@users.noreply.github.com>"]
 [dependencies]
 #rustc-serialize = "0.3.19"
 tiled = "0.1.5"
+rand = "0.3.14"
 
 [dependencies.tungsten]
 git = "https://github.com/carbidegames/tungsten.git"

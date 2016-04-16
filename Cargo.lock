@@ -2,6 +2,7 @@
 name = "shift-inc"
 version = "0.1.0"
 dependencies = [
+ "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiled 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tungsten 0.1.0 (git+https://github.com/carbidegames/tungsten.git)",
  "tungsten-glium2d 0.1.0 (git+https://github.com/carbidegames/tungsten-glium2d.git)",
