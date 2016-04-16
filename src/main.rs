@@ -5,6 +5,7 @@ extern crate cgmath;
 extern crate tungsten;
 extern crate tungsten_glium2d;
 
+mod items;
 mod map;
 mod model;
 mod view;

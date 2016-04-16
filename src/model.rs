@@ -62,7 +62,7 @@ pub struct GameCamera {
 impl GameCamera {
     fn new() -> Self {
         GameCamera {
-            position: Vector2::new(1500.0/128.0, 5300.0/128.0)
+            position: Vector2::new(25.0, 32.0)
         }
     }
 

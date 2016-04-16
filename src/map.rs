@@ -1,5 +1,7 @@
+use cgmath::Vector2;
 use tiled::{Map, Object};
 use rand::{StdRng, Rng};
+use items::{Item, Items};
 
 #[derive(Debug)]
 pub struct GameTile {
@@ -33,21 +35,16 @@ impl FoodSpawner {
         }
     }
 
-    fn spawn(&self, rng: &mut StdRng) -> GameItem {
+    fn spawn(&self, rng: &mut StdRng) -> Item {
         let x = rng.gen_range(self.position[0], self.position[0] + self.size[0]);
         let y = rng.gen_range(self.position[1], self.position[1] + self.size[1]);
         println!("Spawning food at {}, {}", x, y);
 
-        GameItem {
+        Item {
             position: [x, y],
-            lifetime: 20.0
+            lifetime: 30.0
         }
     }
-}
-
-pub struct GameItem {
-    pub position: [f32; 2],
-    pub lifetime: f32,
 }
 
 pub struct GameTiles {
@@ -97,61 +94,54 @@ impl GameTiles {
             tile
         }
     }
+
+    pub fn for_each<F: FnMut(u32, u32, &GameTile)>(&self, mut f: F) {
+        for x in 0..self.width() {
+            for y in 0..self.height() {
+                let tile = self.get(x, y).unwrap();
+                f(x, y, tile);
+            }
+        }
+    }
 }
 
-pub struct GameItems {
-    items: Vec<Option<GameItem>>,
+pub struct Robot {
+    position: Vector2<f32>
 }
 
-impl GameItems {
+impl Robot {
+    fn new(position: Vector2<f32>) -> Self {
+        Robot {
+            position: position
+        }
+    }
+
+    pub fn position(&self) -> Vector2<f32> {
+        self.position
+    }
+}
+
+pub struct Robots {
+    robots: Vec<Robot>,
+}
+
+impl Robots {
     fn new() -> Self {
-        GameItems {
-            items: Vec::new(),
+        Robots {
+            robots: Vec::new(),
         }
     }
 
-    pub fn for_each<F: FnMut(&GameItem)>(&self, mut f: F) {
-        for item in &self.items {
-            if let &Some(ref item) = item {
-                f(item);
-            }
-        }
+    fn add(&mut self, robot: Robot) {
+        self.robots.push(robot);
     }
 
-    pub fn for_each_mut<F: FnMut(&mut GameItem)>(&mut self, mut f: F) {
-        for item in &mut self.items {
-            if let &mut Some(ref mut item) = item {
-                f(item);
-            }
+    pub fn for_each<F: FnMut(&Robot)>(&self, mut f: F) {
+        for robot in &self.robots {
+            //if let &Some(ref robot) = robot {
+            f(robot);
+            //}
         }
-    }
-
-    fn remove<F: Fn(&GameItem) -> bool>(&mut self, f: F) {
-        for item in &mut self.items {
-            let mut kill = false;
-            if let &mut Some(ref mut item) = item {
-                kill = f(item);
-            }
-            if kill {
-                *item = None;
-            }
-        }
-    }
-
-    fn add(&mut self, item: GameItem) {
-        // Find an empty slot
-        for item_o in &mut self.items {
-            if item_o.is_some() {
-                continue;
-            }
-
-            // Found a slot, add it and return
-            *item_o =  Some(item);
-            return;
-        }
-
-        // Couldn't find one, add to end
-        self.items.push(Some(item));
     }
 }
 
@@ -159,7 +149,8 @@ pub struct GameMap {
     tiles: GameTiles,
     food_spawners: Vec<FoodSpawner>,
 
-    items: GameItems,
+    items: Items,
+    robots: Robots,
 
     food_spawn_accum: f32,
 }
@@ -186,11 +177,20 @@ impl GameMap {
             }
         }
 
+        // Find the core and walls in the map and spawn some robots for it
+        let mut robots = Robots::new();
+        tiles.for_each(|x, y, tile| {
+            if tile.id != 2 && tile.id != 3 { return; }
+
+            robots.add(Robot::new(Vector2::new(x as f32 + 0.5, y as f32 + 0.5)));
+        });
+
         GameMap {
             tiles: tiles,
             food_spawners: food_spawners,
 
-            items: GameItems::new(),
+            items: Items::new(),
+            robots: robots,
 
             food_spawn_accum: 0.0,
         }
@@ -200,36 +200,17 @@ impl GameMap {
         &self.tiles
     }
 
-    pub fn items(&self) -> &GameItems {
+    pub fn items(&self) -> &Items {
         &self.items
+    }
+
+    pub fn robots(&self) -> &Robots {
+        &self.robots
     }
 
     pub fn update(&mut self, delta: f32, rng: &mut StdRng) {
         // Update all items
-        let tiles = &mut self.tiles;
-        self.items.for_each_mut(|item| {
-            // == Make them fall down ==
-
-            // Get the new position for the item
-            let mut pos = item.position;
-            pos[1] -= 0.5 * delta;
-
-            // Make sure the new position doesn't collide with any tiles
-            if tiles.get(pos[0] as u32, (pos[1] - 0.1) as u32)
-                .map(|v| v.id)
-                .unwrap_or(0) != 0 {
-                return;
-            }
-
-            // Apply the change
-            item.position = pos;
-
-            // == Update their lifetime ==
-            item.lifetime -= delta;
-        });
-
-        // Remove all items that have a lifetime of or less than zero
-        self.items.remove(|item| item.lifetime <= 0.0);
+        self.items.update(&self.tiles, delta);
 
         // Spawn a food blob if time has passed and we don't already have 100
         self.food_spawn_accum += delta;
