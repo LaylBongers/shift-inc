@@ -3,4 +3,8 @@ name = "shift-inc"
 version = "0.1.0"
 authors = ["Layl <LaylConway@users.noreply.github.com>"]
 
-[dependencies]
+[dependencies.tungsten]
+git = "https://github.com/carbidegames/tungsten.git"
+
+[dependencies.tungsten-glium2d]
+git = "https://github.com/carbidegames/tungsten-glium2d.git"
