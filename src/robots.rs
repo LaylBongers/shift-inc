@@ -187,7 +187,7 @@ impl Robot {
                     } else {
                         // Find a resource to claim
                         // TODO: Move this to a start behavior for the PickUp state
-                        let claimed = items.claim_resource();
+                        let claimed = items.claim_resource(self.position);
                         println!("Robot {} claimed item {:?}", self.id.unwrap(), claimed);
 
                         if claimed.is_none() {

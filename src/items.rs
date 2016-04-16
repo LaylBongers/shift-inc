@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use cgmath::{Vector2, EuclideanVector};
 use tiles::Tiles;
 
 #[derive(Eq, PartialEq)]
@@ -125,27 +125,36 @@ impl Items {
         self.remove_if(|item| item.lifetime <= 0.0);
     }
 
-    pub fn claim_resource(&mut self) -> Option<u32> {
+    pub fn claim_resource(&mut self, near: Vector2<f32>) -> Option<u32> {
+        let mut closest = (None, 1000000.0);
+
         // Find the first unclaimed non-falling resource
-        // TODO: Important! Find the closest one
         for i in 0..self.items.len() {
-            let item_o = &mut self.items[i];
+            let item_o = &self.items[i];
             if item_o.is_none() {
                 continue;
             }
 
-            let item = item_o.as_mut().unwrap();
+            // If the item's falling or is already claimed, skip it
+            let item = item_o.as_ref().unwrap();
             if item.state != ItemState::Static || item.claimed {
                 continue;
             }
 
-            // Actually claim the item
-            item.claimed = true;
-
-            return Some(i as u32);
+            // This one might be possible, get the squared distance
+            let distance = (near - item.position()).magnitude2();
+            if distance < closest.1 {
+                closest = (Some(i), distance);
+            }
         }
 
-        // We couldn't find anything
-        None
+        // If we found one, claim it
+        if let Some(item) = closest.0 {
+            let mut item = &mut self.items[item].as_mut().unwrap();
+            item.claimed = true;
+        }
+
+        // Return what we found
+        closest.0.map(|v| v as u32)
     }
 }
