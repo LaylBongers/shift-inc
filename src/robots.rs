@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use cgmath::{Vector2, EuclideanVector};
 use tiles::Tiles;
 
 #[derive(Debug)]
@@ -82,6 +82,7 @@ impl WorkQueue {
 enum RobotState {
     Waiting,
     Building(Vector2<u32>),
+    Moving(Vector2<f32>),
 }
 
 impl RobotState {
@@ -98,8 +99,8 @@ pub struct Robot {
     id: Option<u32>, // TODO: Sparate robot template
     position: Vector2<f32>,
     assigned_work: Option<u32>, // id of the work
-    state: RobotState,
-    // TODO: Perhaps add a state stack
+    current_state: RobotState,
+    state_stack: Vec<RobotState>,
 }
 
 impl Robot {
@@ -108,7 +109,8 @@ impl Robot {
             id: None,
             position: position,
             assigned_work: None,
-            state: RobotState::Waiting,
+            current_state: RobotState::Waiting,
+            state_stack: Vec::new(),
         }
     }
 
@@ -121,13 +123,17 @@ impl Robot {
     }
 
     fn update(&mut self, delta: f32, tiles: &mut Tiles, work: &mut WorkQueue) {
-        match self.state {
+        match self.current_state {
             RobotState::Waiting => {
                 // If we have work, find something to do
                 if let Some(work_id) = self.assigned_work {
                     let pos = work.get(work_id).target_tile();
-                    self.state = RobotState::Building(pos);
+                    self.current_state = RobotState::Building(pos);
                     println!("Robot {} switched to Building", self.id.unwrap());
+                } else {
+                    let new_pos = self.position + Vector2::new(0.0, 1.0);
+                    self.push_state(RobotState::Moving(new_pos));
+                    println!("Robot {} is idling", self.id.unwrap());
                 }
             },
             RobotState::Building(pos) => {
@@ -139,11 +145,40 @@ impl Robot {
                 if finished {
                     // Mark the work as done
                     work.finish(self.assigned_work.unwrap());
-                    self.state = RobotState::Waiting;
                     self.assigned_work = None;
+                    self.reset_state(RobotState::Waiting);
+                }
+            },
+            RobotState::Moving(pos) => {
+                // Check how far we still need to move
+                let difference = pos - self.position;
+                let move_speed = delta * 0.5;
+
+                // Check if this frame we'll be there
+                if difference.magnitude2() <= move_speed*move_speed {
+                    self.position = pos;
+                    self.pop_state();
+                } else {
+                    // If not, move the distance we can
+                    let direction = difference.normalize();
+                    self.position = self.position + (direction * move_speed);
                 }
             }
         }
+    }
+
+    fn push_state(&mut self, mut state: RobotState) {
+        ::std::mem::swap(&mut state, &mut self.current_state);
+        self.state_stack.push(state);
+    }
+
+    fn pop_state(&mut self) {
+        self.current_state = self.state_stack.pop().unwrap();
+    }
+
+    fn reset_state(&mut self, state: RobotState) {
+        self.state_stack.clear();
+        self.current_state = state;
     }
 }
 
@@ -182,7 +217,7 @@ impl Robots {
 
     fn assign_work(&mut self, work: &mut WorkQueue) {
         // Get all waiting robots
-        let mut waiting_robots: Vec<_> = self.robots.iter_mut().filter(|r| r.state.is_waiting()).collect();
+        let mut waiting_robots: Vec<_> = self.robots.iter_mut().filter(|r| r.current_state.is_waiting()).collect();
 
         // Go over all available work items
         let mut entries = 0;

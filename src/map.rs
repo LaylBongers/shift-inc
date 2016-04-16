@@ -66,13 +66,17 @@ impl GameMap {
             }
         }
 
-        // Spawn one robot for each tile that's under construction
+        // Spawn a single robot for the first under construction tile we find
         let mut robots = Robots::new();
-        tiles.for_each(|x, y, tile| {
-            if !tile.is_under_construction() { return; }
+        'spawn_robot: for x in 0..tiles.width() {
+            for y in 0..tiles.height() {
+                let tile = tiles.get(x, y).unwrap();
+                if !tile.is_under_construction() { continue; }
 
-            robots.add(Robot::new(Vector2::new(x as f32 + 0.5, y as f32 + 0.5)));
-        });
+                robots.add(Robot::new(Vector2::new(x as f32 + 0.5, y as f32 + 0.5)));
+                break 'spawn_robot;
+            }
+        }
 
         // Create the actual struct
         let mut map = GameMap {

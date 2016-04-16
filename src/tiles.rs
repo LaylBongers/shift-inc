@@ -63,7 +63,6 @@ impl Tile {
         let (done, new_class) = {
             let constr: &mut (u32, f32) = &mut self.construction.as_mut().unwrap();
             constr.1 = constr.1 - delta;
-            println!("Time: {}", constr.1);
 
             // If we reached 0 in construction time, we're done
             (constr.1 <= 0.0, constr.0)
