@@ -3,9 +3,16 @@ use tiled::Map;
 use robots::{WorkQueue, WorkEntry};
 
 #[derive(Debug)]
+struct ConstructionData {
+    class: u32,
+    time_remaining: f32,
+    resources_remaining: u32,
+}
+
+#[derive(Debug)]
 pub struct Tile {
     class: u32,
-    construction: Option<(u32, f32)>, // class, time remaining
+    construction: Option<ConstructionData>,
 }
 
 impl Tile {
@@ -23,7 +30,11 @@ impl Tile {
         // We do this for the initial structues and let the robots build it
         let mut construction = None;
         if class == 2 || class == 3 {
-            construction = Some((class, 2.0));
+            construction = Some(ConstructionData {
+                class: class,
+                time_remaining: 2.0,
+                resources_remaining: 1,
+            });
             class = 0; // Empty
         }
 
@@ -58,14 +69,24 @@ impl Tile {
         self.construction = Some(class);
     }*/
 
+    pub fn construction_needs_resources(&self) -> bool {
+        let constr = self.construction.as_ref().unwrap();
+        constr.resources_remaining != 0
+    }
+
+    pub fn apply_resource(&mut self) {
+        let constr = self.construction.as_mut().unwrap();
+        constr.resources_remaining -= 1;
+    }
+
     pub fn apply_build_time(&mut self, delta: f32) -> bool {
         // Perform the building
         let (done, new_class) = {
-            let constr: &mut (u32, f32) = &mut self.construction.as_mut().unwrap();
-            constr.1 = constr.1 - delta;
+            let constr = &mut self.construction.as_mut().unwrap();
+            constr.time_remaining = constr.time_remaining - delta;
 
             // If we reached 0 in construction time, we're done
-            (constr.1 <= 0.0, constr.0)
+            (constr.time_remaining <= 0.0, constr.class)
         };
 
         // If we're done, switch to the new tile

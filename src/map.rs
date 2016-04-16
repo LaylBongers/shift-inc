@@ -1,7 +1,7 @@
 use cgmath::Vector2;
 use tiled::{Map, Object};
 use rand::{StdRng, Rng};
-use items::{Item, Items};
+use items::{Item, Items, ItemState};
 use robots::{Robots, Robot, WorkQueue};
 use tiles::Tiles;
 
@@ -24,8 +24,10 @@ impl FoodSpawner {
         println!("Spawning food at {}, {}", x, y);
 
         Item {
-            position: [x, y],
-            lifetime: 60.0 // Full minute of lifetime
+            position: Vector2::new(x, y),
+            lifetime: 60.0,
+            state: ItemState::Falling,
+            claimed: false,
         }
     }
 }
@@ -130,7 +132,7 @@ impl GameMap {
         }
 
         // Update all the robots
-        self.robots.update(delta, &mut self.tiles, &mut self.work_queue);
+        self.robots.update(delta, &mut self.items, &mut self.tiles, &mut self.work_queue, rng);
     }
 
     fn spawn_food(&mut self, rng: &mut StdRng) {
