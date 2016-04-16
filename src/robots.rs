@@ -1,7 +1,9 @@
 use cgmath::Vector2;
+use tiles::Tiles;
 
 #[derive(Debug)]
 pub struct WorkEntry {
+    id: Option<u32>, // TODO: Sparate work template
     target_tile: Vector2<u32>,
     assigned_robot: Option<u32>,
 }
@@ -9,6 +11,7 @@ pub struct WorkEntry {
 impl WorkEntry {
     pub fn new(target_tile: Vector2<u32>) -> Self {
         WorkEntry {
+            id: None,
             target_tile: target_tile,
             assigned_robot: None,
         }
@@ -16,12 +19,21 @@ impl WorkEntry {
 
     fn assign(&mut self, robot: &mut Robot) {
         self.assigned_robot = Some(robot.id.unwrap());
+        robot.notify_of_work(self);
         println!("Assigned {} at {:?} to {}", self.assigned_robot.unwrap(), self.target_tile, "TODO");
+    }
+
+    fn id(&self) -> u32 {
+        self.id.unwrap()
+    }
+
+    fn target_tile(&self) -> Vector2<u32> {
+        self.target_tile
     }
 }
 
 pub struct WorkQueue {
-    entries: Vec<WorkEntry>,
+    entries: Vec<Option<WorkEntry>>, // TODO: Share functionality with items
 }
 
 impl WorkQueue {
@@ -31,19 +43,45 @@ impl WorkQueue {
         }
     }
 
-    pub fn publish(&mut self, entry: WorkEntry) {
-        println!("Published: {:?}", entry);
-        self.entries.push(entry);
+    pub fn publish(&mut self, mut entry: WorkEntry) {
+
+        // Find an empty slot
+        for i in 0..self.entries.len() {
+            let slot = &mut self.entries[i];
+            if slot.is_some() { continue; }
+
+            // Found a slot
+            entry.id = Some(i as u32);
+            println!("Publishing: {:?}", entry);
+            *slot = Some(entry);
+            return;
+        }
+
+        // Couldn't find one, add a new one
+        entry.id = Some(self.entries.len() as u32);
+        println!("Publishing: {:?}", entry);
+        self.entries.push(Some(entry));
     }
 
     pub fn request(&mut self) -> Option<&mut WorkEntry> {
-        self.entries.iter_mut().find(|e| e.assigned_robot.is_none())
+        self.entries.iter_mut()
+            .find(|e| e.is_some() && e.as_ref().unwrap().assigned_robot.is_none())
+            .map(|e| e.as_mut().unwrap())
+    }
+
+    pub fn finish(&mut self, id: u32) {
+        self.entries[id as usize] = None;
+        println!("Finished work: {}", id);
+    }
+
+    pub fn get(&self, id: u32) -> &WorkEntry {
+        self.entries.get(id as usize).unwrap().as_ref().unwrap()
     }
 }
 
 enum RobotState {
     Waiting,
-    _DoNotMatch,
+    Building(Vector2<u32>),
 }
 
 impl RobotState {
@@ -59,7 +97,9 @@ impl RobotState {
 pub struct Robot {
     id: Option<u32>, // TODO: Sparate robot template
     position: Vector2<f32>,
+    assigned_work: Option<u32>, // id of the work
     state: RobotState,
+    // TODO: Perhaps add a state stack
 }
 
 impl Robot {
@@ -67,12 +107,43 @@ impl Robot {
         Robot {
             id: None,
             position: position,
+            assigned_work: None,
             state: RobotState::Waiting,
         }
     }
 
     pub fn position(&self) -> Vector2<f32> {
         self.position
+    }
+
+    fn notify_of_work(&mut self, work: &WorkEntry) {
+        self.assigned_work = Some(work.id());
+    }
+
+    fn update(&mut self, delta: f32, tiles: &mut Tiles, work: &mut WorkQueue) {
+        match self.state {
+            RobotState::Waiting => {
+                // If we have work, find something to do
+                if let Some(work_id) = self.assigned_work {
+                    let pos = work.get(work_id).target_tile();
+                    self.state = RobotState::Building(pos);
+                    println!("Robot {} switched to Building", self.id.unwrap());
+                }
+            },
+            RobotState::Building(pos) => {
+                // Build instantly
+                // TODO: Move there first
+                let mut tile = tiles.get_mut(pos.x, pos.y).unwrap();
+                let finished = tile.apply_build_time(delta);
+
+                if finished {
+                    // Mark the work as done
+                    work.finish(self.assigned_work.unwrap());
+                    self.state = RobotState::Waiting;
+                    self.assigned_work = None;
+                }
+            }
+        }
     }
 }
 
@@ -92,7 +163,7 @@ impl Robots {
         self.robots.push(robot);
     }
 
-    pub fn for_each<F: FnMut(&Robot)>(&self, mut f: F) {
+    pub fn for_each<F: FnMut(&Robot)>(&self, mut f: F) { // TODO: Perhaps just return a vec
         for robot in &self.robots {
             //if let &Some(ref robot) = robot {
             f(robot);
@@ -100,7 +171,16 @@ impl Robots {
         }
     }
 
-    pub fn update(&mut self, work: &mut WorkQueue) {
+    pub fn update(&mut self, delta: f32, tiles: &mut Tiles, work: &mut WorkQueue) {
+        self.assign_work(work);
+
+        // Now that all work is assigned, update the robots
+        for robot in &mut self.robots {
+            robot.update(delta, tiles, work);
+        }
+    }
+
+    fn assign_work(&mut self, work: &mut WorkQueue) {
         // Get all waiting robots
         let mut waiting_robots: Vec<_> = self.robots.iter_mut().filter(|r| r.state.is_waiting()).collect();
 

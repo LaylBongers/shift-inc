@@ -70,7 +70,7 @@ impl Items {
 
             // Make sure the new position doesn't collide with any tiles
             if tiles.get(pos[0] as u32, (pos[1] - 0.1) as u32)
-                .map(|v| v.id())
+                .map(|v| v.class())
                 .unwrap_or(0) != 0 {
                 // Do nothing
             } else {

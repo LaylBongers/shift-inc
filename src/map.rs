@@ -126,7 +126,7 @@ impl GameMap {
         }
 
         // Update all the robots
-        self.robots.update(&mut self.work_queue);
+        self.robots.update(delta, &mut self.tiles, &mut self.work_queue);
     }
 
     fn spawn_food(&mut self, rng: &mut StdRng) {
