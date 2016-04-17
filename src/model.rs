@@ -10,6 +10,7 @@ enum_from_primitive! {
         CameraLeft,
         CameraDown,
         CameraRight,
+        Interact,
     }
 }
 
@@ -21,7 +22,7 @@ pub struct InputState {
 impl InputState {
     fn new() -> Self {
         InputState {
-            keys: vec![false; GameKey::CameraRight as usize + 1],
+            keys: vec![false; GameKey::Interact as usize + 1],
             hover_tile: Vector2::new(0, 0),
         }
     }

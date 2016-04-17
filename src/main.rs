@@ -16,7 +16,7 @@ use std::fs::File;
 use std::path::Path;
 use cgmath::Vector2;
 use tungsten::{Framework, EventDispatcher, UpdateEvent};
-use tungsten_glium2d::{Frontend2D, CloseRequestEvent, KeyboardInputEvent, Key, ElementState, MouseMoveEvent};
+use tungsten_glium2d::{Frontend2D, CloseRequestEvent, KeyboardInputEvent, Key, ElementState, MouseMoveEvent, MouseButton, MouseButtonEvent};
 use model::{GameModel, GameKey};
 use view::View;
 
@@ -53,6 +53,15 @@ fn mouse_move_handler(model: &mut GameModel, event: &MouseMoveEvent) {
     model.handle_mouse_move(Vector2::from(event.position).cast());
 }
 
+fn mouse_button_handler(model: &mut GameModel, event: &MouseButtonEvent) {
+    let pressed = event.state == ElementState::Pressed;
+
+    match event.button {
+        MouseButton::Left => model.handle_keychange(GameKey::Interact, pressed),
+        _ => ()
+    }
+}
+
 fn main() {
     let mut file = File::open(&Path::new("assets/map.tmx")).unwrap();
     let map = tiled::parse(&mut file).unwrap();
@@ -63,6 +72,7 @@ fn main() {
     event_dispatcher.add_handler(update_handler);
     event_dispatcher.add_handler(keyboard_handler);
     event_dispatcher.add_handler(mouse_move_handler);
+    event_dispatcher.add_handler(mouse_button_handler);
 
     let mut frontend = Frontend2D::new();
     let view = View::new(&mut frontend);
