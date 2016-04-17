@@ -13,14 +13,16 @@ enum_from_primitive! {
     }
 }
 
-struct InputState {
-    keys: Vec<bool>
+pub struct InputState {
+    keys: Vec<bool>,
+    hover_tile: Vector2<u32>,
 }
 
 impl InputState {
     fn new() -> Self {
         InputState {
-            keys: vec![false; GameKey::CameraRight as usize + 1]
+            keys: vec![false; GameKey::CameraRight as usize + 1],
+            hover_tile: Vector2::new(0, 0),
         }
     }
 
@@ -52,6 +54,19 @@ impl InputState {
         } else {
             value
         }
+    }
+
+    fn process_mouse(&mut self, screen_pos: Vector2<u32>, camera: &GameCamera) {
+        let relative_to_center = screen_pos.cast::<f32>() - Vector2::new(1280.0/2.0, 720.0/2.0);
+        let mut relative_to_center_world = relative_to_center / 128.0;
+        relative_to_center_world.y = -relative_to_center_world.y; // Have to flip this axis
+        let world = camera.position + relative_to_center_world;
+
+        self.hover_tile = world.cast();
+    }
+
+    pub fn get_hover_tile(&self) -> Vector2<u32> {
+        self.hover_tile
     }
 }
 
@@ -114,6 +129,10 @@ impl GameModel {
         &self.camera
     }
 
+    pub fn input(&self) -> &InputState {
+        &self.input
+    }
+
     pub fn update(&mut self, delta: f32) {
         self.camera.update(delta, &self.input);
         self.map.update(delta, &mut self.rng);
@@ -125,5 +144,9 @@ impl GameModel {
 
     pub fn handle_keychange(&mut self, key: GameKey, state: bool) {
         self.input.set(key, state);
+    }
+
+    pub fn handle_mouse_move(&mut self, position: Vector2<u32>) {
+        self.input.process_mouse(position, &self.camera);
     }
 }

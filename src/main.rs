@@ -14,8 +14,9 @@ mod view;
 
 use std::fs::File;
 use std::path::Path;
+use cgmath::Vector2;
 use tungsten::{Framework, EventDispatcher, UpdateEvent};
-use tungsten_glium2d::{Frontend2D, CloseRequestEvent, KeyboardInputEvent, Key, KeyState};
+use tungsten_glium2d::{Frontend2D, CloseRequestEvent, KeyboardInputEvent, Key, ElementState, MouseMoveEvent};
 use model::{GameModel, GameKey};
 use view::View;
 
@@ -28,7 +29,7 @@ fn update_handler(model: &mut GameModel, event: &UpdateEvent) {
 }
 
 fn keyboard_handler(model: &mut GameModel, event: &KeyboardInputEvent) {
-    let pressed = event.state == KeyState::Pressed;
+    let pressed = event.state == ElementState::Pressed;
 
     // Check for the escape key
     if pressed {
@@ -48,6 +49,10 @@ fn keyboard_handler(model: &mut GameModel, event: &KeyboardInputEvent) {
     }
 }
 
+fn mouse_move_handler(model: &mut GameModel, event: &MouseMoveEvent) {
+    model.handle_mouse_move(Vector2::from(event.position).cast());
+}
+
 fn main() {
     let mut file = File::open(&Path::new("assets/map.tmx")).unwrap();
     let map = tiled::parse(&mut file).unwrap();
@@ -57,6 +62,7 @@ fn main() {
     event_dispatcher.add_handler(close_request_handler);
     event_dispatcher.add_handler(update_handler);
     event_dispatcher.add_handler(keyboard_handler);
+    event_dispatcher.add_handler(mouse_move_handler);
 
     let mut frontend = Frontend2D::new();
     let view = View::new(&mut frontend);

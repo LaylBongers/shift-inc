@@ -158,7 +158,7 @@ impl Robot {
                         Vector2::new(0.3, 0.3);
 
                     // Finally, start the movement
-                    self.push_state(RobotState::Sleep(0.5));
+                    self.push_state(RobotState::Sleep(1.0));
                     self.push_state(RobotState::Moving(new_pos, 0.25));
                     println!("Robot {} is idling", self.id.unwrap());
                 }

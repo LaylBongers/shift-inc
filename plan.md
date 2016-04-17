@@ -1,4 +1,4 @@
-Features:                                                                       PLANNING        ACTUAL
+                                                                                PLANNING        ACTUAL
 - Show stomach wall in grid                                                     3:30 - 4:30     3:31 - 4:30
 - Have green food blobs floating down in stomach wall                           4:30 - 5:30     4:30 - 5:30
                                                                                 SLEEP
@@ -9,11 +9,12 @@ Features:                                                                       
 - Make robots carry food blobs to buildings to build them (find a path)         13:30 - 16:00   13:53 - 16:55
                                                                                                 FOOD
                                                                                                 18:49 - 23:09
-- Require shapeshift construction bots to be built                              16:00 - 18:00
-                                                                                FOOD
-- Require the construction bots to be given food blobs                          20:00 - 22:00
-- Show blood vein.                                                              22:00 - 00:00
-- Require shapeshift construction bots to be able to move to blood vein         00:00 - 02:00
+
+# Day 3
+- Require shapeshift construction bots to be built                              11:00 - 12:00
+- Require the construction bots to be given food blobs                          12:00 - 13:00
+- Make a bar tick down, requiring the player to deliver enough food blobs to    13:00 - 15:00
+    shapeshift construction bots in time.
 
 Low priority:
 - Make robots collect floating blobs to storage if not needed elsewhere
@@ -23,3 +24,5 @@ Low priority:
 - Have the factory produce material from food blobs
 - Have an airlock for robots
 - Body defense system
+- Show blood vein.
+- Require shapeshift construction bots to be able to move to blood vein

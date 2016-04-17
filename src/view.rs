@@ -6,6 +6,7 @@ pub struct View {
     food: TextureId,
     robot: TextureId,
     construction: TextureId,
+    selection: TextureId,
 }
 
 impl View {
@@ -23,6 +24,7 @@ impl View {
             food: frontend.load_texture("./assets/food.png"),
             robot: frontend.load_texture("./assets/robot.png"),
             construction: frontend.load_texture("./assets/construction.png"),
+            selection: frontend.load_texture("./assets/selection.png"),
         }
     }
 
@@ -69,6 +71,15 @@ impl View {
             };
             batch.rectangle(rect);
         });
+
+        // Render the selection indicator
+        let pos = model.input().get_hover_tile();
+        let rect = Rectangle {
+            texture: self.selection,
+            position: [pos.x as f32 * 128.0 + 64.0, pos.y as f32 * 128.0 + 64.0],
+            size: [128.0, 128.0],
+        };
+        batch.rectangle(rect);
     }
 
     fn render_ui(&self, _model: &GameModel, info: &mut FrameRenderInfo) {
