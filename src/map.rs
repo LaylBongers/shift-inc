@@ -2,7 +2,7 @@ use cgmath::Vector2;
 use tiled::{Map, Object};
 use rand::{StdRng, Rng};
 use items::{Item, Items, ItemState};
-use robots::{Robots, Robot, WorkQueue};
+use robots::{Robots, Robot, WorkQueue, WorkEntry};
 use tiles::Tiles;
 
 struct FoodSpawner {
@@ -69,6 +69,7 @@ impl GameMap {
         }
 
         // Spawn a single robot for the first under construction tile we find
+        // TODO: Temporarily, it's two for the sake of testing
         let mut robots = Robots::new();
         'spawn_robot: for x in 0..tiles.width() {
             for y in 0..tiles.height() {
@@ -76,7 +77,9 @@ impl GameMap {
                 if !tile.is_under_construction() { continue; }
 
                 robots.add(Robot::new(Vector2::new(x as f32 + 0.5, y as f32 + 0.5)));
-                break 'spawn_robot;
+                if robots.amount() >= 2 {
+                    break 'spawn_robot;
+                }
             }
         }
 
@@ -118,6 +121,25 @@ impl GameMap {
 
     pub fn robots(&self) -> &Robots {
         &self.robots
+    }
+
+    pub fn start_construction(&mut self, pos: Vector2<u32>, class: u32) {
+        let tile = self.tiles.get_mut(pos.x, pos.y).unwrap();
+
+        // Can't overwrite an existing construction
+        if tile.is_under_construction() {
+            return;
+        }
+
+        // Set the tile to under construction
+        tile.set_construction(class);
+
+        // Create a work item for that tile
+        self.work_queue.publish(WorkEntry::new(pos));
+    }
+
+    pub fn get_tile(&self, pos: Vector2<u32>) -> Option<u32> {
+        self.tiles.get(pos.x, pos.y).map(|v| v.class())
     }
 
     pub fn update(&mut self, delta: f32, rng: &mut StdRng) {

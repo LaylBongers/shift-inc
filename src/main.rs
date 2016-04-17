@@ -17,7 +17,7 @@ use std::path::Path;
 use cgmath::Vector2;
 use tungsten::{Framework, EventDispatcher, UpdateEvent};
 use tungsten_glium2d::{Frontend2D, CloseRequestEvent, KeyboardInputEvent, Key, ElementState, MouseMoveEvent, MouseButton, MouseButtonEvent};
-use model::{GameModel, GameKey};
+use model::{GameModel, GameButton};
 use view::View;
 
 fn close_request_handler(model: &mut GameModel, _event: &CloseRequestEvent) {
@@ -41,10 +41,10 @@ fn keyboard_handler(model: &mut GameModel, event: &KeyboardInputEvent) {
 
     // Relay all key changes
     match event.key {
-        Key::W => model.handle_keychange(GameKey::CameraUp, pressed),
-        Key::A => model.handle_keychange(GameKey::CameraLeft, pressed),
-        Key::S => model.handle_keychange(GameKey::CameraDown, pressed),
-        Key::D => model.handle_keychange(GameKey::CameraRight, pressed),
+        Key::W => model.handle_keychange(GameButton::CameraUp, pressed),
+        Key::A => model.handle_keychange(GameButton::CameraLeft, pressed),
+        Key::S => model.handle_keychange(GameButton::CameraDown, pressed),
+        Key::D => model.handle_keychange(GameButton::CameraRight, pressed),
         _ => ()
     }
 }
@@ -57,7 +57,7 @@ fn mouse_button_handler(model: &mut GameModel, event: &MouseButtonEvent) {
     let pressed = event.state == ElementState::Pressed;
 
     match event.button {
-        MouseButton::Left => model.handle_keychange(GameKey::Interact, pressed),
+        MouseButton::Left => model.handle_keychange(GameButton::Interact, pressed),
         _ => ()
     }
 }

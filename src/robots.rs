@@ -213,7 +213,7 @@ impl Robot {
             RobotState::Moving(pos, speed_multiplier) => {
                 // Check how far we still need to move
                 let difference = pos - self.position;
-                let move_speed = delta * 0.5;
+                let move_speed = delta * 0.75;
 
                 // Check if this frame we'll be there
                 if difference.magnitude2() <= move_speed*move_speed {
@@ -276,6 +276,10 @@ impl Robots {
         Robots {
             robots: Vec::new(),
         }
+    }
+
+    pub fn amount(&mut self) -> usize {
+        self.robots.len()
     }
 
     pub fn add(&mut self, mut robot: Robot) {

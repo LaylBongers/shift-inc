@@ -5,7 +5,7 @@ use map::GameMap;
 
 enum_from_primitive! {
     #[derive(Debug, PartialEq)]
-    pub enum GameKey {
+    pub enum GameButton {
         CameraUp,
         CameraLeft,
         CameraDown,
@@ -22,20 +22,20 @@ pub struct InputState {
 impl InputState {
     fn new() -> Self {
         InputState {
-            keys: vec![false; GameKey::Interact as usize + 1],
+            keys: vec![false; GameButton::Interact as usize + 1],
             hover_tile: Vector2::new(0, 0),
         }
     }
 
-    fn set(&mut self, key: GameKey, state: bool) {
+    fn set(&mut self, key: GameButton, state: bool) {
         self.keys[key as usize] = state;
     }
 
-    fn get(&self, key: GameKey) -> bool {
+    fn get(&self, key: GameButton) -> bool {
         self.keys[key as usize]
     }
 
-    fn get_axis(&self, left: GameKey, right: GameKey) -> f32 {
+    fn get_axis(&self, left: GameButton, right: GameButton) -> f32 {
         let mut value = 0.0;
         if self.get(left) { value -= 1.0; }
         if self.get(right) { value += 1.0; }
@@ -43,8 +43,8 @@ impl InputState {
     }
 
     fn get_axes_normalized(&self,
-        left: GameKey, right: GameKey,
-        down: GameKey, up: GameKey)
+        left: GameButton, right: GameButton,
+        down: GameButton, up: GameButton)
     -> Vector2<f32> {
         let mut value = Vector2::new(0.0, 0.0);
         value.x += self.get_axis(left, right);
@@ -88,9 +88,38 @@ impl GameCamera {
 
     fn update(&mut self, delta: f32, input: &InputState) {
         let axes = input.get_axes_normalized(
-            GameKey::CameraLeft, GameKey::CameraRight, GameKey::CameraDown, GameKey::CameraUp
+            GameButton::CameraLeft, GameButton::CameraRight, GameButton::CameraDown, GameButton::CameraUp
         );
         self.position = self.position + (axes * delta * 2.0);
+    }
+}
+
+struct BuildingBehavior {
+    prev_button: bool
+}
+
+impl BuildingBehavior {
+    fn new() -> Self {
+        BuildingBehavior {
+            prev_button: false
+        }
+    }
+
+    fn update(&mut self, input: &InputState, map: &mut GameMap) {
+        let current_button = input.get(GameButton::Interact);
+
+        if current_button != self.prev_button && !current_button {
+            let tile_pos = input.get_hover_tile();
+
+            // If the tile's already a 2 or a 3, don't do anything
+            let current_class = map.get_tile(tile_pos).unwrap();
+            if current_class != 2 && current_class != 3 {
+                // Create a construction where the mouse is
+                map.start_construction(tile_pos, 2);
+            }
+        }
+
+        self.prev_button = current_button;
     }
 }
 
@@ -100,6 +129,7 @@ pub struct GameModel {
     camera: GameCamera,
 
     input: InputState,
+    building: BuildingBehavior,
     rng: StdRng,
 }
 
@@ -114,6 +144,7 @@ impl GameModel {
             camera: GameCamera::new(),
 
             input: InputState::new(),
+            building: BuildingBehavior::new(),
             rng: rng,
         }
     }
@@ -135,6 +166,7 @@ impl GameModel {
     }
 
     pub fn update(&mut self, delta: f32) {
+        self.building.update(&self.input, &mut self.map);
         self.camera.update(delta, &self.input);
         self.map.update(delta, &mut self.rng);
     }
@@ -143,7 +175,7 @@ impl GameModel {
         self.should_close = true;
     }
 
-    pub fn handle_keychange(&mut self, key: GameKey, state: bool) {
+    pub fn handle_keychange(&mut self, key: GameButton, state: bool) {
         self.input.set(key, state);
     }
 

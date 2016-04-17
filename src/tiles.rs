@@ -65,9 +65,13 @@ impl Tile {
         self.construction.map(|v| v.0)
     }*/
 
-    /*pub fn set_construction(&mut self, class: u32) {
-        self.construction = Some(class);
-    }*/
+    pub fn set_construction(&mut self, class: u32) {
+        self.construction = Some(ConstructionData {
+            class: class,
+            time_remaining: 2.0,
+            resources_remaining: 1,
+        });
+    }
 
     pub fn construction_needs_resources(&self) -> bool {
         let constr = self.construction.as_ref().unwrap();
